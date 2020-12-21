@@ -9,8 +9,9 @@ export class TradingViewAPI {
   private subscriptions: TickerName[] = [];
   private session!: string;
   private sessionRegistered = false;
-
-  constructor() {
+  private token: string;
+  constructor(token: string) {
+    this.token = token || 'unauthorized_user_token';
     this._resetWebSocket();
   }
 
@@ -129,7 +130,7 @@ export class TradingViewAPI {
 
           // connecting as unauthorized user
 
-          this._sendMessage("set_auth_token", ["unauthorized_user_token"]);
+          this._sendMessage("set_auth_token", [this.token]);
 
           // registering default ticker session
 
@@ -158,6 +159,8 @@ export class TradingViewAPI {
             "volume",
             "ask",
             "bid",
+            "bid_size",
+            "ask_size",
             "fundamentals",
             "high_price",
             "is_tradable",
