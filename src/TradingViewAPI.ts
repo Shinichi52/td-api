@@ -15,7 +15,7 @@ export class TradingViewAPI {
     this._resetWebSocket();
   }
 
-  public getTicker(tickerName: string): Promise<TickerData> {
+  public getTicker(tickers: Array<string>): Promise<TickerData> {
     return new Promise((resolve, reject) => {
       const each = 10;
       const runs = 3000 / each; // time in ms divided by above
@@ -26,7 +26,7 @@ export class TradingViewAPI {
 
       const interval = setInterval(() => {
         if (this.ws.readyState === WebSocket.OPEN && this.sessionRegistered) {
-          this._getTicker(tickerName, resolve, reject);
+          this._getTicker(tickers, resolve, reject);
           clearInterval(interval);
         } else if (!runs) {
           reject("WebSocket connection is closed.");
