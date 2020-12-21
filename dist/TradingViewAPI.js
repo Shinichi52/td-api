@@ -198,6 +198,10 @@ var TradingViewAPI = /** @class */ (function () {
                     var tickerName = tticker.n;
                     var tickerStatus = tticker.s;
                     var tickerUpdate = tticker.v;
+                    if (tickerUpdate.volume && _this.tickerData[tickerName]) {
+                        var diff = tickerUpdate.volume - _this.tickerData[tickerName].volume;
+                        _this.tickerData[tickerName].quantity = diff > 0 ? diff : _this.tickerData[tickerName].quantity;
+                    }
                     // set ticker data, adding all object parameters together
                     _this.tickerData[tickerName] = Object.assign(_this.tickerData[tickerName] || { last_retrieved: new Date() }, tickerUpdate, { s: tickerStatus }, { last_update: new Date() });
                     _this.callbackFn && _this.callbackFn(_this.tickerData[tickerName]);

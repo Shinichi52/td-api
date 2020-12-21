@@ -200,6 +200,11 @@ export class TradingViewAPI {
           const tickerStatus = tticker.s;
           const tickerUpdate = tticker.v;
 
+          if (tickerUpdate.volume && this.tickerData[tickerName]) {
+            const diff = tickerUpdate.volume - this.tickerData[tickerName].volume;
+            this.tickerData[tickerName].quantity = diff > 0 ? diff : this.tickerData[tickerName].quantity;
+          }
+
           // set ticker data, adding all object parameters together
           this.tickerData[tickerName] = Object.assign(
             this.tickerData[tickerName] || { last_retrieved: new Date() },
