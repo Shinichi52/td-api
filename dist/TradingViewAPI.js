@@ -34,17 +34,19 @@ var TradingViewAPI = /** @class */ (function () {
         this.token = token || 'unauthorized_user_token';
         this._resetWebSocket();
     }
-    TradingViewAPI.prototype.getTicker = function (tickers) {
+    TradingViewAPI.prototype.getTicker = function (tickers, callbackFn) {
         var _this = this;
         return new Promise(function (resolve, reject) {
             var each = 10;
             var runs = 3000 / each; // time in ms divided by above
+            _this.callbackFn = callbackFn;
+            _this.resolveFn = resolve;
             if (_this.ws.readyState === ws_1.default.CLOSED) {
                 _this._resetWebSocket();
             }
             var interval = setInterval(function () {
                 if (_this.ws.readyState === ws_1.default.OPEN && _this.sessionRegistered) {
-                    _this._getTicker(tickers, resolve, reject);
+                    _this._getTicker(tickers);
                     clearInterval(interval);
                 }
                 else if (!runs) {
@@ -54,39 +56,32 @@ var TradingViewAPI = /** @class */ (function () {
             }, each);
         });
     };
-    TradingViewAPI.prototype._getTicker = function (tickers, resolve, reject) {
-        var _this = this;
-        var _loop_1 = function (index) {
+    TradingViewAPI.prototype._getTicker = function (tickers) {
+        for (var index = 0; index < tickers.length; index++) {
             var tickerName = tickers[index];
             // check if ticker is tracked, and if it is, return stored data
-            if (this_1.tickerData[tickerName] && this_1.tickerData[tickerName].pro_name) {
-                resolve(this_1.tickerData[tickerName]);
-                this_1.tickerData[tickerName].last_retrieved = new Date();
-                return { value: void 0 };
+            if (this.tickerData[tickerName] && this.tickerData[tickerName].pro_name) {
+                this.resolveFn && this.resolveFn(this.tickerData[tickerName]);
+                this.callbackFn && this.callbackFn(this.tickerData[tickerName]);
+                this.tickerData[tickerName].last_retrieved = new Date();
+                return;
             }
             // if not, register and wait for data
-            this_1._registerTicker(tickerName);
-            var each = 10; // how much ms between runs
-            var runs = 3000 / each; // time in ms divided by above
-            var interval = setInterval(function () {
-                --runs;
-                if (_this.tickerData[tickerName] && _this.tickerData[tickerName].pro_name) {
-                    resolve(_this.tickerData[tickerName]);
-                    _this.tickerData[tickerName].last_retrieved = new Date();
-                    clearInterval(interval);
-                }
-                else if (!runs) {
-                    _this._deleteTicker(tickerName);
-                    reject("Timed out.");
-                    clearInterval(interval);
-                }
-            }, each);
-        };
-        var this_1 = this;
-        for (var index = 0; index < tickers.length; index++) {
-            var state_1 = _loop_1(index);
-            if (typeof state_1 === "object")
-                return state_1.value;
+            this._registerTicker(tickerName);
+            // const each = 10; // how much ms between runs
+            // let runs = 3000 / each; // time in ms divided by above
+            // const interval = setInterval(() => {
+            //   --runs;
+            //   if (this.tickerData[tickerName] && this.tickerData[tickerName].pro_name) {
+            //     resolve(this.tickerData[tickerName]);
+            //     this.tickerData[tickerName].last_retrieved = new Date();
+            //     clearInterval(interval);
+            //   } else if (!runs) {
+            //     this._deleteTicker(tickerName);
+            //     reject("Timed out.");
+            //     clearInterval(interval);
+            //   }
+            // }, each);
         }
     };
     TradingViewAPI.prototype._generateSession = function () {
@@ -109,18 +104,20 @@ var TradingViewAPI = /** @class */ (function () {
             { flags: ["force_permission"] }
         ]));
     };
-    TradingViewAPI.prototype._unregisterTicker = function (ticker) {
-        var index = this.subscriptions.indexOf(ticker);
-        if (index === -1) {
-            return;
-        }
-        this.subscriptions.splice(index, 1);
-        this.ws.send(SIO.createMessage("quote_remove_symbols", [this.session, ticker]));
-    };
-    TradingViewAPI.prototype._deleteTicker = function (ticker) {
-        this._unregisterTicker(ticker);
-        delete this.tickerData[ticker];
-    };
+    // private _unregisterTicker(ticker: TickerName) {
+    //   const index = this.subscriptions.indexOf(ticker);
+    //   if (index === -1) {
+    //     return;
+    //   }
+    //   this.subscriptions.splice(index, 1);
+    //   this.ws.send(
+    //     SIO.createMessage("quote_remove_symbols", [this.session, ticker])
+    //   );
+    // }
+    // private _deleteTicker(ticker: TickerName) {
+    //   this._unregisterTicker(ticker);
+    //   delete this.tickerData[ticker];
+    // }
     TradingViewAPI.prototype._resetWebSocket = function () {
         var _this = this;
         this.tickerData = {};
@@ -203,10 +200,14 @@ var TradingViewAPI = /** @class */ (function () {
                     var tickerUpdate = tticker.v;
                     // set ticker data, adding all object parameters together
                     _this.tickerData[tickerName] = Object.assign(_this.tickerData[tickerName] || { last_retrieved: new Date() }, tickerUpdate, { s: tickerStatus }, { last_update: new Date() });
-                    if (Date.now() - _this.tickerData[tickerName].last_retrieved >
-                        1000 * 60) {
-                        _this._deleteTicker(tickerName);
-                    }
+                    _this.callbackFn && _this.callbackFn(_this.tickerData[tickerName]);
+                    _this.resolveFn && _this.resolveFn(_this.tickerData[tickerName]);
+                    // if (
+                    //   Date.now() - this.tickerData[tickerName].last_retrieved >
+                    //   1000 * 60
+                    // ) {
+                    //   this._deleteTicker(tickerName);
+                    // }
                 }
             });
         });

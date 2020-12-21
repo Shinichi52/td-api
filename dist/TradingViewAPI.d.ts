@@ -5,15 +5,15 @@ export declare class TradingViewAPI {
     private session;
     private sessionRegistered;
     private token;
+    private callbackFn;
+    private resolveFn;
     constructor(token: string);
-    getTicker(tickers: Array<string>): Promise<TickerData>;
+    getTicker(tickers: Array<string>, callbackFn: (data: TickerData) => void): Promise<TickerData>;
     private _getTicker;
     private _generateSession;
     private _sendRawMessage;
     private _sendMessage;
     private _registerTicker;
-    private _unregisterTicker;
-    private _deleteTicker;
     private _resetWebSocket;
 }
 //# sourceMappingURL=TradingViewAPI.d.ts.map

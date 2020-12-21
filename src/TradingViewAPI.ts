@@ -10,23 +10,26 @@ export class TradingViewAPI {
   private session!: string;
   private sessionRegistered = false;
   private token: string;
+  private callbackFn!: (data: TickerData) => void;
+  private resolveFn!: (data: TickerData) => void;
   constructor(token: string) {
     this.token = token || 'unauthorized_user_token';
     this._resetWebSocket();
   }
 
-  public getTicker(tickers: Array<string>): Promise<TickerData> {
+  public getTicker(tickers: Array<string>, callbackFn: (data: TickerData) => void): Promise<TickerData> {
     return new Promise((resolve, reject) => {
       const each = 10;
       const runs = 3000 / each; // time in ms divided by above
-
+      this.callbackFn = callbackFn;
+      this.resolveFn = resolve
       if (this.ws.readyState === WebSocket.CLOSED) {
         this._resetWebSocket();
       }
 
       const interval = setInterval(() => {
         if (this.ws.readyState === WebSocket.OPEN && this.sessionRegistered) {
-          this._getTicker(tickers, resolve, reject);
+          this._getTicker(tickers);
           clearInterval(interval);
         } else if (!runs) {
           reject("WebSocket connection is closed.");
@@ -37,15 +40,14 @@ export class TradingViewAPI {
   }
 
   private _getTicker(
-    tickers: Array<string>,
-    resolve: (data: TickerData) => void,
-    reject: (message: string) => void
+    tickers: Array<string>
   ) {
     for (let index = 0; index < tickers.length; index++) {
       const tickerName = tickers[index];
       // check if ticker is tracked, and if it is, return stored data
       if (this.tickerData[tickerName] && this.tickerData[tickerName].pro_name) {
-        resolve(this.tickerData[tickerName]);
+        this.resolveFn && this.resolveFn(this.tickerData[tickerName]);
+        this.callbackFn && this.callbackFn(this.tickerData[tickerName])
         this.tickerData[tickerName].last_retrieved = new Date();
         return;
       }
@@ -53,20 +55,20 @@ export class TradingViewAPI {
       // if not, register and wait for data
 
       this._registerTicker(tickerName);
-      const each = 10; // how much ms between runs
-      let runs = 3000 / each; // time in ms divided by above
-      const interval = setInterval(() => {
-        --runs;
-        if (this.tickerData[tickerName] && this.tickerData[tickerName].pro_name) {
-          resolve(this.tickerData[tickerName]);
-          this.tickerData[tickerName].last_retrieved = new Date();
-          clearInterval(interval);
-        } else if (!runs) {
-          this._deleteTicker(tickerName);
-          reject("Timed out.");
-          clearInterval(interval);
-        }
-      }, each);
+      // const each = 10; // how much ms between runs
+      // let runs = 3000 / each; // time in ms divided by above
+      // const interval = setInterval(() => {
+      //   --runs;
+      //   if (this.tickerData[tickerName] && this.tickerData[tickerName].pro_name) {
+      //     resolve(this.tickerData[tickerName]);
+      //     this.tickerData[tickerName].last_retrieved = new Date();
+      //     clearInterval(interval);
+      //   } else if (!runs) {
+      //     this._deleteTicker(tickerName);
+      //     reject("Timed out.");
+      //     clearInterval(interval);
+      //   }
+      // }, each);
     }
   }
 
@@ -96,21 +98,21 @@ export class TradingViewAPI {
     );
   }
 
-  private _unregisterTicker(ticker: TickerName) {
-    const index = this.subscriptions.indexOf(ticker);
-    if (index === -1) {
-      return;
-    }
-    this.subscriptions.splice(index, 1);
-    this.ws.send(
-      SIO.createMessage("quote_remove_symbols", [this.session, ticker])
-    );
-  }
+  // private _unregisterTicker(ticker: TickerName) {
+  //   const index = this.subscriptions.indexOf(ticker);
+  //   if (index === -1) {
+  //     return;
+  //   }
+  //   this.subscriptions.splice(index, 1);
+  //   this.ws.send(
+  //     SIO.createMessage("quote_remove_symbols", [this.session, ticker])
+  //   );
+  // }
 
-  private _deleteTicker(ticker: TickerName) {
-    this._unregisterTicker(ticker);
-    delete this.tickerData[ticker];
-  }
+  // private _deleteTicker(ticker: TickerName) {
+  //   this._unregisterTicker(ticker);
+  //   delete this.tickerData[ticker];
+  // }
 
   private _resetWebSocket() {
     this.tickerData = {};
@@ -205,13 +207,14 @@ export class TradingViewAPI {
             { s: tickerStatus },
             { last_update: new Date() }
           );
-
-          if (
-            Date.now() - this.tickerData[tickerName].last_retrieved >
-            1000 * 60
-          ) {
-            this._deleteTicker(tickerName);
-          }
+          this.callbackFn && this.callbackFn(this.tickerData[tickerName]);
+          this.resolveFn && this.resolveFn(this.tickerData[tickerName]);
+          // if (
+          //   Date.now() - this.tickerData[tickerName].last_retrieved >
+          //   1000 * 60
+          // ) {
+          //   this._deleteTicker(tickerName);
+          // }
         }
       });
     });
