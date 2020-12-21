@@ -37,35 +37,37 @@ export class TradingViewAPI {
   }
 
   private _getTicker(
-    tickerName: string,
+    tickers: Array<string>,
     resolve: (data: TickerData) => void,
     reject: (message: string) => void
   ) {
-    // check if ticker is tracked, and if it is, return stored data
-
-    if (this.tickerData[tickerName] && this.tickerData[tickerName].pro_name) {
-      resolve(this.tickerData[tickerName]);
-      this.tickerData[tickerName].last_retrieved = new Date();
-      return;
-    }
-
-    // if not, register and wait for data
-
-    this._registerTicker(tickerName);
-    const each = 10; // how much ms between runs
-    let runs = 3000 / each; // time in ms divided by above
-    const interval = setInterval(() => {
-      --runs;
+    for (let index = 0; index < tickers.length; index++) {
+      const tickerName = tickers[index];
+      // check if ticker is tracked, and if it is, return stored data
       if (this.tickerData[tickerName] && this.tickerData[tickerName].pro_name) {
         resolve(this.tickerData[tickerName]);
         this.tickerData[tickerName].last_retrieved = new Date();
-        clearInterval(interval);
-      } else if (!runs) {
-        this._deleteTicker(tickerName);
-        reject("Timed out.");
-        clearInterval(interval);
+        return;
       }
-    }, each);
+
+      // if not, register and wait for data
+
+      this._registerTicker(tickerName);
+      const each = 10; // how much ms between runs
+      let runs = 3000 / each; // time in ms divided by above
+      const interval = setInterval(() => {
+        --runs;
+        if (this.tickerData[tickerName] && this.tickerData[tickerName].pro_name) {
+          resolve(this.tickerData[tickerName]);
+          this.tickerData[tickerName].last_retrieved = new Date();
+          clearInterval(interval);
+        } else if (!runs) {
+          this._deleteTicker(tickerName);
+          reject("Timed out.");
+          clearInterval(interval);
+        }
+      }, each);
+    }
   }
 
   private _generateSession() {
