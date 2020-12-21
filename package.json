@@ -1,0 +1,27 @@
+{
+  "name": "tradingview-api",
+  "version": "1.0.0",
+  "description": "A gateway to TradingView's data for your Node.js application!",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "dependencies": {
+    "randomstring": "^1.1.5",
+    "ws": "^7.2.0"
+  },
+  "devDependencies": {
+    "@types/randomstring": "^1.1.6",
+    "@types/ws": "^6.0.4",
+    "tslint": "^5.20.1",
+    "typescript": "^3.7.2"
+  },
+  "scripts": {
+    "build": "tsc",
+    "lint": "tslint --project ./",
+    "prepublish": "tsc",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/imxeno/tradingview-scraper.git"
+  }
+}
