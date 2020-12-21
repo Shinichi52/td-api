@@ -14,8 +14,6 @@ export declare class TradingViewAPI {
     private _sendRawMessage;
     private _sendMessage;
     private _registerTicker;
-    private _unregisterTicker;
-    private _deleteTicker;
     private _resetWebSocket;
 }
 //# sourceMappingURL=TradingViewAPI.d.ts.map
