@@ -55,20 +55,20 @@ export class TradingViewAPI {
       // if not, register and wait for data
 
       this._registerTicker(tickerName);
-      // const each = 10; // how much ms between runs
-      // let runs = 3000 / each; // time in ms divided by above
-      // const interval = setInterval(() => {
-      //   --runs;
-      //   if (this.tickerData[tickerName] && this.tickerData[tickerName].pro_name) {
-      //     resolve(this.tickerData[tickerName]);
-      //     this.tickerData[tickerName].last_retrieved = new Date();
-      //     clearInterval(interval);
-      //   } else if (!runs) {
-      //     this._deleteTicker(tickerName);
-      //     reject("Timed out.");
-      //     clearInterval(interval);
-      //   }
-      // }, each);
+      const each = 10; // how much ms between runs
+      let runs = 3000 / each; // time in ms divided by above
+      const interval = setInterval(() => {
+        --runs;
+        if (this.tickerData[tickerName] && this.tickerData[tickerName].pro_name) {
+          this.resolveFn(this.tickerData[tickerName]);
+          this.tickerData[tickerName].last_retrieved = new Date();
+          clearInterval(interval);
+        } else if (!runs) {
+          this._deleteTicker(tickerName);
+          // reject("Timed out.");
+          clearInterval(interval);
+        }
+      }, each);
     }
   }
 
@@ -98,21 +98,21 @@ export class TradingViewAPI {
     );
   }
 
-  // private _unregisterTicker(ticker: TickerName) {
-  //   const index = this.subscriptions.indexOf(ticker);
-  //   if (index === -1) {
-  //     return;
-  //   }
-  //   this.subscriptions.splice(index, 1);
-  //   this.ws.send(
-  //     SIO.createMessage("quote_remove_symbols", [this.session, ticker])
-  //   );
-  // }
+  private _unregisterTicker(ticker: TickerName) {
+    const index = this.subscriptions.indexOf(ticker);
+    if (index === -1) {
+      return;
+    }
+    this.subscriptions.splice(index, 1);
+    this.ws.send(
+      SIO.createMessage("quote_remove_symbols", [this.session, ticker])
+    );
+  }
 
-  // private _deleteTicker(ticker: TickerName) {
-  //   this._unregisterTicker(ticker);
-  //   delete this.tickerData[ticker];
-  // }
+  private _deleteTicker(ticker: TickerName) {
+    this._unregisterTicker(ticker);
+    delete this.tickerData[ticker];
+  }
 
   private _resetWebSocket() {
     this.tickerData = {};
@@ -209,12 +209,6 @@ export class TradingViewAPI {
           );
           this.callbackFn && this.callbackFn(this.tickerData[tickerName]);
           this.resolveFn && this.resolveFn(this.tickerData[tickerName]);
-          // if (
-          //   Date.now() - this.tickerData[tickerName].last_retrieved >
-          //   1000 * 60
-          // ) {
-          //   this._deleteTicker(tickerName);
-          // }
         }
       });
     });
