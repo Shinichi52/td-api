@@ -139,6 +139,7 @@ var TradingViewAPI = /** @class */ (function () {
             packets.forEach(function (packet) {
                 // reply to keepalive packets
                 if (packet["~protocol~keepalive~"]) {
+                    _this.callbackAction({ type: 'keepalive', time: new Date().getTime() });
                     _this._sendRawMessage("~h~" + packet["~protocol~keepalive~"]);
                 }
                 else if (packet.session_id) {

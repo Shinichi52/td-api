@@ -136,6 +136,7 @@ export class TradingViewAPI {
       packets.forEach((packet: any) => {
         // reply to keepalive packets
         if (packet["~protocol~keepalive~"]) {
+          this.callbackAction({ type: 'keepalive', time: new Date().getTime() })
           this._sendRawMessage("~h~" + packet["~protocol~keepalive~"]);
         } else if (packet.session_id) {
           // reply to successful connection packet
