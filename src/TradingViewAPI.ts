@@ -11,17 +11,19 @@ export class TradingViewAPI {
   private sessionRegistered = false;
   private token: string;
   private callbackFn!: (data: TickerData) => void;
+  private callbackAction!: (data: { [key: string]: any }) => void;
   private resolveFn!: (data: TickerData) => void;
   constructor(token: string) {
     this.token = token || 'unauthorized_user_token';
     this._resetWebSocket();
   }
 
-  public getTicker(tickers: Array<string>, callbackFn: (data: TickerData) => void): Promise<TickerData> {
+  public getTicker(tickers: Array<string>, callbackFn: (data: TickerData) => void, callbackAction: (data: { [key: string]: any }) => void): Promise<TickerData> {
     return new Promise((resolve, reject) => {
       const each = 10;
       const runs = 3000 / each; // time in ms divided by above
       this.callbackFn = callbackFn;
+      this.callbackAction = callbackAction;
       this.resolveFn = resolve
       if (this.ws.readyState === WebSocket.CLOSED) {
         this._resetWebSocket();
@@ -123,6 +125,12 @@ export class TradingViewAPI {
     this.ws = new WebSocket("wss://data.tradingview.com/socket.io/websocket", {
       origin: "https://data.tradingview.com"
     });
+    this.ws.on("error", (err) => {
+      this.callbackAction({ type: 'error', err })
+    })
+    this.ws.on("close", (err) => {
+      this.callbackAction({ type: 'close', err })
+    })
     this.ws.on("message", (data: string) => {
       const packets = SIO.parseMessages(data);
       packets.forEach((packet: any) => {

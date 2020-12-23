@@ -34,12 +34,13 @@ var TradingViewAPI = /** @class */ (function () {
         this.token = token || 'unauthorized_user_token';
         this._resetWebSocket();
     }
-    TradingViewAPI.prototype.getTicker = function (tickers, callbackFn) {
+    TradingViewAPI.prototype.getTicker = function (tickers, callbackFn, callbackAction) {
         var _this = this;
         return new Promise(function (resolve, reject) {
             var each = 10;
             var runs = 3000 / each; // time in ms divided by above
             _this.callbackFn = callbackFn;
+            _this.callbackAction = callbackAction;
             _this.resolveFn = resolve;
             if (_this.ws.readyState === ws_1.default.CLOSED) {
                 _this._resetWebSocket();
@@ -126,6 +127,12 @@ var TradingViewAPI = /** @class */ (function () {
         this.sessionRegistered = false;
         this.ws = new ws_1.default("wss://data.tradingview.com/socket.io/websocket", {
             origin: "https://data.tradingview.com"
+        });
+        this.ws.on("error", function (err) {
+            _this.callbackAction({ type: 'error', err: err });
+        });
+        this.ws.on("close", function (err) {
+            _this.callbackAction({ type: 'close', err: err });
         });
         this.ws.on("message", function (data) {
             var packets = SIO.parseMessages(data);
